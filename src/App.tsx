@@ -12,7 +12,7 @@ import PharmacistDashboard from "./pages/PharmacistDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import PatientVerification from "./pages/admin/PatientVerification";
 import QueueManagement from "./pages/admin/QueueManagement";
-import Reports from "./pages/admin/Reports";
+import AdminReports from "./pages/admin/Reports";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import DoctorDashboardHome from "./pages/doctor/Dashboard";
 import Schedule from "./pages/doctor/Schedule";
@@ -22,6 +22,7 @@ import OwnerMainDashboard from "./pages/owner/OwnerMainDashboard";
 import StaffManagement from "./pages/owner/StaffManagement";
 import FinancialReports from "./pages/owner/FinancialReports";
 import Analytics from "./pages/owner/Analytics";
+import OwnerReports from "./pages/owner/Reports";
 import Settings from "./pages/owner/Settings";
 import MedicationManagement from "./pages/owner/MedicationManagement";
 import NotFound from "./pages/NotFound";
@@ -46,7 +47,7 @@ const App = () => (
             <Route index element={<PatientVerification />} />
             <Route path="patient-verification" element={<PatientVerification />} />
             <Route path="queue-management" element={<QueueManagement />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="reports" element={<AdminReports />} />
           </Route>
 
           <Route path="/doctor" element={<DoctorDashboard />}>
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="staff-management" element={<StaffManagement />} />
             <Route path="financial-reports" element={<FinancialReports />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="reports" element={<OwnerReports />} />
             <Route path="medication-management" element={<MedicationManagement />} />
             <Route path="settings" element={<Settings />} />
           </Route>
