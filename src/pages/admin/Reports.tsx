@@ -45,16 +45,6 @@ const Reports = () => {
             Data kunjungan, aktivitas, dan rangkuman operasional klinik
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input placeholder="Cari..." className="pl-10" />
-          </div>
-          <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>AD</AvatarFallback>
-          </Avatar>
-        </div>
       </div>
 
       {/* Summary Cards */}
