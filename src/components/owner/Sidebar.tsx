@@ -5,6 +5,7 @@ import {
   DollarSign,
   BarChart,
   Settings,
+  Pill,
 } from "lucide-react";
 
 const OwnerSidebar = () => {
@@ -13,6 +14,7 @@ const OwnerSidebar = () => {
     { to: "/owner/staff-management", icon: Users, label: "Manajemen Staff" },
     { to: "/owner/financial-reports", icon: DollarSign, label: "Laporan Keuangan" },
     { to: "/owner/analytics", icon: BarChart, label: "Analitik & Performa" },
+    { to: "/owner/medication-management", icon: Pill, label: "Kelola Obat" },
     { to: "/owner/settings", icon: Settings, label: "Pengaturan Klinik" },
   ];
 

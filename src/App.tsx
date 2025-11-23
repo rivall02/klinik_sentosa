@@ -23,6 +23,7 @@ import StaffManagement from "./pages/owner/StaffManagement";
 import FinancialReports from "./pages/owner/FinancialReports";
 import Analytics from "./pages/owner/Analytics";
 import Settings from "./pages/owner/Settings";
+import MedicationManagement from "./pages/owner/MedicationManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="staff-management" element={<StaffManagement />} />
             <Route path="financial-reports" element={<FinancialReports />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="medication-management" element={<MedicationManagement />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 

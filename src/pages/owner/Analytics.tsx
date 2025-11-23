@@ -100,15 +100,9 @@ const Analytics = () => {
             <CardTitle>Performa Dokter (Jumlah Konsultasi)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer className="h-64 w-full">
-              <BarChart data={doctorPerformanceData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="consultations" fill="var(--color-primary)" radius={4} />
-              </BarChart>
-            </ChartContainer>
+            <div className="h-64 w-full flex items-center justify-center bg-gray-100 rounded-md">
+              <p className="text-muted-foreground">Bar Chart Placeholder</p>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -116,15 +110,9 @@ const Analytics = () => {
             <CardTitle>Tren Kunjungan Pasien</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer className="h-64 w-full">
-              <LineChart data={patientTrendData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="count" stroke="var(--color-primary)" />
-              </LineChart>
-            </ChartContainer>
+            <div className="h-64 w-full flex items-center justify-center bg-gray-100 rounded-md">
+              <p className="text-muted-foreground">Line Chart Placeholder</p>
+            </div>
           </CardContent>
         </Card>
       </div>
