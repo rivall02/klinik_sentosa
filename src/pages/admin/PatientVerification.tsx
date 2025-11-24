@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -14,29 +15,43 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-
-const mockPatients = [
-  {
-    id: "1",
-    name: "Ahmad Santoso",
-    registrationDate: "2024-10-28",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    name: "Budi Cahyono",
-    registrationDate: "2024-10-28",
-    status: "Pending",
-  },
-  {
-    id: "3",
-    name: "Citra Lestari",
-    registrationDate: "2024-10-27",
-    status: "Revision Requested",
-  },
-];
+import { supabase } from "@/lib/supabaseClient";
 
 const PatientVerification = () => {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("patients")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+        setPatients(data);
+      } catch (error: any) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, []);
+
+  if (loading) {
+    return <div>Memuat data pasien...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Verifikasi Pasien</h2>
@@ -50,11 +65,11 @@ const PatientVerification = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mockPatients.map((patient) => (
+          {patients.map((patient) => (
             <TableRow key={patient.id}>
-              <TableCell>{patient.name}</TableCell>
-              <TableCell>{patient.registrationDate}</TableCell>
-              <TableCell>{patient.status}</TableCell>
+              <TableCell>{patient.full_name}</TableCell>
+              <TableCell>{new Date(patient.created_at).toLocaleDateString()}</TableCell>
+              <TableCell>Pending</TableCell> {/* Status masih hardcoded */}
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -81,4 +96,3 @@ const PatientVerification = () => {
 };
 
 export default PatientVerification;
-

@@ -37,7 +37,7 @@ const Home = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary">Klinik Sentosa</h1>
           <nav className="flex gap-4">
-            <Button variant="outline" onClick={() => navigate("/staff")}>
+            <Button variant="outline" onClick={() => navigate("/login")}>
               Login Staff
             </Button>
           </nav>
