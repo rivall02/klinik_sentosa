@@ -59,6 +59,7 @@ const Register = () => {
     checkAdminRole();
   }, []);
 
+
   const handleNewPatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitting(true);
@@ -91,6 +92,42 @@ const Register = () => {
       toast({
         variant: "destructive",
         title: "Pendaftaran Gagal",
+        description: error.message,
+      });
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleUpdatePatientAvailability = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient) return;
+
+    setFormSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ availability: availability })
+        .eq('id', selectedPatient.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Jadwal Pasien Diperbarui!",
+        description: `Jadwal untuk ${selectedPatient.full_name} telah diperbarui.`,
+      });
+      
+      setTimeout(() => {
+        // Navigate back to patient data or another relevant page
+        navigate("/admin/patient-data"); 
+      }, 2000);
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update Gagal",
         description: error.message,
       });
     } finally {
@@ -260,16 +297,72 @@ const Register = () => {
           {step === 2 && status === 'returning' && (
             // Returning Patient Search UI
             <div className="space-y-6">
-              {/* ... UI for returning patient ... */}
+              <form onSubmit={handleSearchPatient} className="flex gap-2">
+                <Input
+                  placeholder="Cari nama pasien..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-grow"
+                />
+                <Button type="submit" disabled={searchLoading}>
+                  {searchLoading ? 'Mencari...' : <UserSearch className="w-4 h-4" />}
+                </Button>
+              </form>
+              
+              {searchResults.length > 0 && !selectedPatient && (
+                <div className="space-y-2">
+                  <Label>Hasil Pencarian:</Label>
+                  {searchResults.map(p => (
+                    <Card key={p.id} className="p-4 cursor-pointer hover:bg-muted" onClick={() => {
+                      setSelectedPatient(p);
+                      // Pre-fill availability form if data exists
+                      if (p.availability) {
+                        setAvailability(p.availability);
+                      } else {
+                        // Reset if no availability data
+                        setAvailability({ senin: "", selasa: "", rabu: "", kamis: "", jumat: "" });
+                      }
+                    }}>
+                      <p className="font-bold">{p.full_name}</p>
+                      <p className="text-sm text-muted-foreground">No. RM: {p.medical_record_number || 'N/A'}</p>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {selectedPatient && (
+                <Card className="p-4 bg-green-50 border-green-200">
+                    <div className="flex items-center gap-4">
+                        <CheckCircle2 className="w-8 h-8 text-green-600"/>
+                        <div>
+                            <p className="font-bold">Pasien Dipilih:</p>
+                            <p>{selectedPatient.full_name} (No. RM: {selectedPatient.medical_record_number || 'N/A'})</p>
+                        </div>
+                         <Button variant="ghost" size="sm" onClick={() => setSelectedPatient(null)} className="ml-auto">Ganti</Button>
+                    </div>
+                </Card>
+              )}
+
+              <div className="flex gap-4">
+                <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  Kembali
+                </Button>
+                <Button type="button" onClick={() => setStep(3)} className="flex-1" size="lg" disabled={!selectedPatient}>
+                  Lanjutkan
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Step 3: Availability */}
-          {step === 3 && status === 'new' && (
-            <form onSubmit={handleNewPatientSubmit} className="space-y-6">
+          {/* Step 3: Availability for New or Returning Patient */}
+          {(step === 3) && (status === 'new' || status === 'returning') && (
+            <form onSubmit={status === 'new' ? handleNewPatientSubmit : handleUpdatePatientAvailability} className="space-y-6">
               <div>
                 <Label className="text-lg mb-4 block">
-                  Waktu Luang untuk Konsultasi (Senin-Jumat)
+                  {status === 'new'
+                    ? 'Waktu Luang untuk Konsultasi (Senin-Jumat)'
+                    : `Perbarui Waktu Luang untuk ${selectedPatient?.full_name}`
+                  }
                 </Label>
                 <div className="space-y-4">
                   {Object.keys(availability).map((day) => (
@@ -303,7 +396,10 @@ const Register = () => {
                   Kembali
                 </Button>
                 <Button type="submit" className="flex-1" size="lg" disabled={formSubmitting}>
-                  {formSubmitting ? 'Mendaftarkan...' : 'Selesaikan Pendaftaran'}
+                  {formSubmitting 
+                    ? (status === 'new' ? 'Mendaftarkan...' : 'Memperbarui...')
+                    : (status === 'new' ? 'Selesaikan Pendaftaran' : 'Simpan Perubahan Jadwal')
+                  }
                 </Button>
               </div>
             </form>

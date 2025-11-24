@@ -91,7 +91,7 @@ const App = () => {
                 <Route index element={<DoctorDashboardHome />} />
                 <Route path="schedule" element={<Schedule />} />
                 <Route path="queue" element={<DoctorQueue />} />
-                <Route path="consultation/:patientId" element={<Consultation />} />
+                <Route path="consultation/:patientId/:appointmentId" element={<Consultation />} />
               </Route>
 
               <Route path="/owner" element={<OwnerDashboard />}>

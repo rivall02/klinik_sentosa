@@ -1,6 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StockManagement from "@/components/pharmacist/StockManagement";
-import ViewStock from "@/components/pharmacist/ViewStock";
 
 const MedicationManagement = () => {
   return (
@@ -11,18 +9,7 @@ const MedicationManagement = () => {
           Lihat, tambah, dan kelola stok obat-obatan klinik.
         </p>
       </div>
-      <Tabs defaultValue="view-stock">
-        <TabsList>
-          <TabsTrigger value="view-stock">Lihat Stok Obat</TabsTrigger>
-          <TabsTrigger value="manage-stock">Manajemen Stok</TabsTrigger>
-        </TabsList>
-        <TabsContent value="view-stock">
-          <ViewStock />
-        </TabsContent>
-        <TabsContent value="manage-stock">
-          <StockManagement />
-        </TabsContent>
-      </Tabs>
+      <StockManagement />
     </div>
   );
 };

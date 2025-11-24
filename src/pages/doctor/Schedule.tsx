@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, getDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, getDay } from 'date-fns';
 
 type Appointment = {
   time: string;
@@ -41,6 +42,7 @@ const Schedule = () => {
   const [scheduleTime, setScheduleTime] = useState('');
 
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,32 +51,30 @@ const Schedule = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not found");
 
-        // 1. Fetch verified patients
         const { data: patientsData, error: patientsError } = await supabase
           .from('patients')
           .select('*')
           .eq('is_pending_verification', false);
         if (patientsError) throw patientsError;
 
-        // 2. Fetch this doctor's appointments for the current week
-        const today = new Date();
-        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
-        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-
-        const { data: appointmentsData, error: appointmentsError } = await supabase
+        const { data: allAppointments, error: appointmentsError } = await supabase
           .from('appointments')
           .select('*, patients(full_name)')
           .eq('doctor_id', user.id)
-          .gte('appointment_time', weekStart.toISOString())
-          .lte('appointment_time', weekEnd.toISOString());
+          .neq('status', 'batal');
         if (appointmentsError) throw appointmentsError;
         
-        // Filter out patients who already have an appointment
-        const scheduledPatientIds = new Set(appointmentsData.map(appt => appt.patient_id));
-        const filteredUnscheduled = patientsData.filter(p => !scheduledPatientIds.has(p.id));
-
+        const filteredUnscheduled = patientsData.filter(p => !allAppointments.some(appt => String(appt.patient_id) === String(p.id)));
         setUnscheduledPatients(filteredUnscheduled);
-        setScheduledAppointments(appointmentsData);
+
+        const now = new Date();
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+        const thisWeeksAppointments = allAppointments.filter(appt => {
+            const apptDate = new Date(appt.appointment_time);
+            return apptDate >= weekStart && apptDate <= weekEnd;
+        });
+        setScheduledAppointments(thisWeeksAppointments);
 
       } catch (error: any) {
         setError(error.message);
@@ -96,26 +96,21 @@ const Schedule = () => {
       toast({ variant: "destructive", title: "Data tidak lengkap", description: "Mohon isi tanggal dan waktu."});
       return;
     }
-
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not found");
-
         const appointmentDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
-
         const { error } = await supabase.from('appointments').insert({
             patient_id: patientToSchedule.id,
             doctor_id: user.id,
             appointment_time: appointmentDateTime.toISOString(),
             status: 'menunggu',
-            queue_number: Math.floor(Math.random() * 100) + 1, // Placeholder
+            queue_number: Math.floor(Math.random() * 100) + 1,
         });
-
         if (error) throw error;
-
         toast({ title: "Sukses!", description: `Jadwal untuk ${patientToSchedule.full_name} telah dibuat.` });
         setIsScheduleDialogOpen(false);
-        setRefreshKey(prev => prev + 1); // Refresh data
+        setRefreshKey(prev => prev + 1);
     } catch(error: any) {
         toast({ variant: "destructive", title: "Gagal Membuat Jadwal", description: error.message });
     }
@@ -124,15 +119,11 @@ const Schedule = () => {
   const getWeeklySchedule = () => {
     const weekDays = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const schedule: { [key: string]: Appointment[] } = { Senin:[], Selasa:[], Rabu:[], Kamis:[], Jumat:[] };
-    
     scheduledAppointments.forEach(appt => {
       const apptDate = new Date(appt.appointment_time);
       const dayName = weekDays[getDay(apptDate)];
       if (dayName in schedule) {
-        schedule[dayName].push({
-          time: format(apptDate, 'HH:mm'),
-          patient: appt.patients.full_name,
-        });
+        schedule[dayName].push({ time: format(apptDate, 'HH:mm'), patient: appt.patients.full_name });
       }
     });
     return schedule;
@@ -155,13 +146,7 @@ const Schedule = () => {
                 <TableRow key={patient.id}>
                   <TableCell>{patient.full_name}</TableCell>
                   <TableCell>
-                    {patient.availability ? (
-                      <ul className="text-sm">
-                        {Object.entries(patient.availability).map(([day, time]) => (
-                          <li key={day}><span className="font-semibold capitalize">{day}:</span> {`${time || 'Tidak tersedia'}`}</li>
-                        ))}
-                      </ul>
-                    ) : <span className="text-muted-foreground">Tidak ada data</span>}
+                    {patient.availability ? (<ul className="text-sm">{Object.entries(patient.availability).map(([day, time]) => (<li key={day}><span className="font-semibold capitalize">{day}:</span> {`${time || 'Tidak tersedia'}`}</li>))}</ul>) : <span className="text-muted-foreground">Tidak ada data</span>}
                   </TableCell>
                   <TableCell><Button onClick={() => handleOpenScheduleDialog(patient)}>Jadwalkan</Button></TableCell>
                 </TableRow>
@@ -178,34 +163,20 @@ const Schedule = () => {
             <div key={day}>
               <h3 className="font-semibold mb-2">{day}</h3>
               <div className="space-y-2">
-                {appointments.length > 0 ? (
-                  appointments.map((appt, index) => (
-                    <Card key={index} className="p-2 bg-muted"><p className="text-sm font-medium">{appt.patient}</p><p className="text-xs text-muted-foreground">{appt.time}</p></Card>
-                  ))
-                ) : <p className="text-sm text-muted-foreground">Tidak ada jadwal</p>}
+                {appointments.length > 0 ? (appointments.map((appt, index) => (<Card key={index} className="p-2 bg-muted"><p className="text-sm font-medium">{appt.patient}</p><p className="text-xs text-muted-foreground">{appt.time}</p></Card>))) : <p className="text-sm text-muted-foreground">Tidak ada jadwal</p>}
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Schedule Dialog */}
       <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Jadwalkan {patientToSchedule?.full_name}</DialogTitle></DialogHeader>
           <form onSubmit={handleCreateAppointment} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Tanggal</Label>
-              <Input id="date" type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} required/>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="time">Waktu</Label>
-              <Input id="time" type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} required/>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="outline">Batal</Button></DialogClose>
-                <Button type="submit">Simpan Jadwal</Button>
-            </DialogFooter>
+            <div className="space-y-2"><Label htmlFor="date">Tanggal</Label><Input id="date" type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} required/></div>
+            <div className="space-y-2"><Label htmlFor="time">Waktu</Label><Input id="time" type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} required/></div>
+            <DialogFooter><DialogClose asChild><Button type="button" variant="outline">Batal</Button></DialogClose><Button type="submit">Simpan Jadwal</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -214,4 +185,3 @@ const Schedule = () => {
 };
 
 export default Schedule;
-

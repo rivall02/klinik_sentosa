@@ -50,6 +50,15 @@ const PatientData = () => {
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<any | null>(null);
   const [patientToEdit, setPatientToEdit] = useState<any | null>(null);
+  const [patientToRegister, setPatientToRegister] = useState<any | null>(null);
+  
+  // State for new appointment form
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [appointmentFormData, setAppointmentFormData] = useState({
+    doctor_id: "",
+    appointment_time: "",
+    notes: "",
+  });
 
   // State for edit form
   const [editFormData, setEditFormData] = useState({
@@ -61,22 +70,32 @@ const PatientData = () => {
   });
 
   useEffect(() => {
-    const fetchAllPatients = async () => {
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        // Fetch patients
+        const { data: patientsData, error: patientsError } = await supabase
           .from("patients")
           .select("*")
           .order("created_at", { ascending: false });
-        if (error) throw error;
-        setPatients(data);
+        if (patientsError) throw patientsError;
+        setPatients(patientsData);
+
+        // Fetch doctors
+        const { data: doctorsData, error: doctorsError } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .eq("role", "dokter");
+        if (doctorsError) throw doctorsError;
+        setDoctors(doctorsData);
+
       } catch (error: any) {
         setError(error.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchAllPatients();
+    fetchInitialData();
   }, [refreshKey]);
 
   // --- Handlers ---
@@ -93,6 +112,32 @@ const PatientData = () => {
       address: patient.address || "",
       date_of_birth: patient.date_of_birth || "",
     });
+  };
+
+  const handleRegisterConsultation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!patientToRegister || !appointmentFormData.doctor_id || !appointmentFormData.appointment_time) {
+      toast({ variant: "destructive", title: "Gagal", description: "Dokter dan waktu konsultasi harus diisi." });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('appointments').insert({
+        patient_id: patientToRegister.id,
+        doctor_id: appointmentFormData.doctor_id,
+        appointment_time: appointmentFormData.appointment_time,
+        status: 'menunggu', // Default status
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Sukses", description: `Konsultasi untuk ${patientToRegister.full_name} berhasil didaftarkan.` });
+      setPatientToRegister(null);
+      setAppointmentFormData({ doctor_id: "", appointment_time: "", notes: "" }); // Reset form
+      setRefreshKey(prev => prev + 1);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Gagal Mendaftarkan", description: error.message });
+    }
   };
 
   const handleUpdatePatient = async (e: React.FormEvent) => {
@@ -163,6 +208,7 @@ const PatientData = () => {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleViewDetails(patient)}>Lihat Detail</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleEditClick(patient)}>Edit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPatientToRegister(patient)}>Daftarkan Konsultasi</DropdownMenuItem>
                     <DropdownMenuItem className="text-red-600" onClick={() => setPatientToDelete(patient)}>Hapus</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -172,6 +218,46 @@ const PatientData = () => {
         </TableBody>
       </Table>
 
+      {/* Register Consultation Dialog */}
+      <Dialog open={!!patientToRegister} onOpenChange={() => setPatientToRegister(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Daftarkan Konsultasi untuk {patientToRegister?.full_name}</DialogTitle>
+            <DialogDescription>Pilih dokter dan waktu konsultasi.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRegisterConsultation} className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctor" className="text-right">Dokter</Label>
+              <select
+                id="doctor"
+                value={appointmentFormData.doctor_id}
+                onChange={(e) => setAppointmentFormData({ ...appointmentFormData, doctor_id: e.target.value })}
+                className="col-span-3"
+              >
+                <option value="" disabled>Pilih Dokter</option>
+                {doctors.map(doctor => (
+                  <option key={doctor.id} value={doctor.id}>{doctor.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="appointment_time" className="text-right">Waktu</Label>
+              <Input
+                id="appointment_time"
+                type="datetime-local"
+                value={appointmentFormData.appointment_time}
+                onChange={(e) => setAppointmentFormData({ ...appointmentFormData, appointment_time: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="outline">Batal</Button></DialogClose>
+              <Button type="submit">Daftarkan</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
       {/* View Detail Dialog */}
       <Dialog open={!!selectedPatient} onOpenChange={() => setSelectedPatient(null)}>
         <DialogContent>
