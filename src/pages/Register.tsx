@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldAlert, UserSearch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -22,11 +22,16 @@ const Register = () => {
     fullName: "",
     idNumber: "",
     phone: "",
-    email: "",
     dateOfBirth: "",
     address: "",
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
+  
+  // State for returning patient flow
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
 
   useEffect(() => {
     const checkAdminRole = async () => {
@@ -47,7 +52,7 @@ const Register = () => {
     checkAdminRole();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleNewPatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitting(true);
     
@@ -57,7 +62,8 @@ const Register = () => {
         date_of_birth: formData.dateOfBirth,
         address: formData.address,
         phone_number: formData.phone,
-        // medical_record_number needs to be generated if required
+        medical_record_number: formData.idNumber,
+        status: 'pending_verification',
       });
 
       if (error) {
@@ -65,13 +71,11 @@ const Register = () => {
       }
 
       toast({
-        title: "Pendaftaran Pasien Berhasil!",
+        title: "Pendaftaran Pasien Baru Berhasil!",
         description: `Pasien bernama ${formData.fullName} telah ditambahkan.`,
       });
       
-      // Reset form or navigate away
       setTimeout(() => {
-        // For now, navigate to patient verification to see the new patient
         navigate("/admin/patient-verification");
       }, 2000);
 
@@ -86,6 +90,34 @@ const Register = () => {
     }
   };
 
+  const handleSearchPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    setSearchLoading(true);
+    setSearchResults([]);
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .ilike('full_name', `%${searchQuery}%`);
+      
+      if (error) throw error;
+
+      if (data) {
+        setSearchResults(data);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Pencarian Gagal",
+        description: error.message,
+      });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -95,6 +127,7 @@ const Register = () => {
   }
 
   if (!isAdmin) {
+    // Admin verification gate
     return (
       <div className="min-h-screen bg-medical-gray py-12">
         <div className="container max-w-lg mx-auto px-4 text-center">
@@ -143,11 +176,6 @@ const Register = () => {
             </p>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-8">
-            {/* Stepper logic remains the same */}
-          </div>
-
           {/* Step 1: Patient Status */}
           {step === 1 && (
             <div className="space-y-6">
@@ -158,7 +186,7 @@ const Register = () => {
                     className={`p-6 cursor-pointer transition-all hover:shadow-md ${
                       status === "new" ? "border-primary bg-primary/5" : "border-border"
                     }`}
-                    onClick={() => setStatus("new")}
+                    onClick={() => { setStatus("new"); setSelectedPatient(null); }}
                   >
                     <h3 className="font-semibold text-lg mb-2">Pasien Baru</h3>
                     <p className="text-muted-foreground text-sm">
@@ -169,11 +197,11 @@ const Register = () => {
                     className={`p-6 cursor-pointer transition-all hover:shadow-md ${
                       status === "returning" ? "border-primary bg-primary/5" : "border-border"
                     }`}
-                    onClick={() => setStatus("returning")}
+                    onClick={() => { setStatus("returning"); setSelectedPatient(null); }}
                   >
                     <h3 className="font-semibold text-lg mb-2">Pasien Lama</h3>
                     <p className="text-muted-foreground text-sm">
-                      Cari dan pilih dari data pasien yang ada. (Fitur belum tersedia)
+                      Cari dan pilih dari data pasien yang ada.
                     </p>
                   </Card>
                 </div>
@@ -184,16 +212,17 @@ const Register = () => {
             </div>
           )}
 
-          {/* Step 2: Personal Information */}
-          {step === 2 && (
-            <div className="space-y-6">
+          {/* Step 2: Personal Information or Search */}
+          {step === 2 && status === 'new' && (
+            // New Patient Form
+            <form onSubmit={handleNewPatientSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Nama Lengkap *</Label>
                   <Input id="fullName" required value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="Nama Pasien" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="idNumber">Nomor KTP</Label>
+                  <Label htmlFor="idNumber">Nomor Rekam Medis / KTP</Label>
                   <Input id="idNumber" value={formData.idNumber} onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })} placeholder="3201..." />
                 </div>
                 <div className="space-y-2">
@@ -213,12 +242,68 @@ const Register = () => {
                 <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
                   Kembali
                 </Button>
-                <Button type="button" onClick={handleSubmit} className="flex-1" size="lg" disabled={formSubmitting}>
-                  {formSubmitting ? 'Mendaftarkan...' : 'Daftarkan Pasien'}
+                <Button type="submit" className="flex-1" size="lg" disabled={formSubmitting}>
+                  {formSubmitting ? 'Mendaftarkan...' : 'Daftarkan Pasien Baru'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 2 && status === 'returning' && (
+            // Returning Patient Search UI
+            <div className="space-y-6">
+              {!selectedPatient ? (
+                <>
+                  <form onSubmit={handleSearchPatient} className="space-y-4">
+                    <Label htmlFor="search-patient" className="text-lg">Cari Pasien Lama</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        id="search-patient"
+                        placeholder="Ketik nama pasien..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      <Button type="submit" disabled={searchLoading}>
+                        {searchLoading ? 'Mencari...' : <UserSearch className="w-5 h-5"/>}
+                      </Button>
+                    </div>
+                  </form>
+                  <div className="space-y-2">
+                    {searchResults.map(patient => (
+                      <Card key={patient.id} className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted" onClick={() => setSelectedPatient(patient)}>
+                        <div>
+                          <p className="font-semibold">{patient.full_name}</p>
+                          <p className="text-sm text-muted-foreground">No. RM: {patient.medical_record_number || 'N/A'}</p>
+                        </div>
+                        <p className="text-sm">Pilih</p>
+                      </Card>
+                    ))}
+                    {!searchLoading && searchResults.length === 0 && <p className="text-center text-muted-foreground">Tidak ada hasil.</p>}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center space-y-4">
+                  <h3 className="text-xl font-semibold">Pasien Terpilih:</h3>
+                  <p className="text-2xl text-primary">{selectedPatient.full_name}</p>
+                  <p className="text-muted-foreground">No. RM: {selectedPatient.medical_record_number || 'N/A'}</p>
+                  <div className="flex gap-4 justify-center">
+                    <Button onClick={() => alert(`Lanjutkan proses untuk pasien: ${selectedPatient.full_name}`)}>
+                      Lanjutkan Pendaftaran Antrian
+                    </Button>
+                     <Button variant="outline" onClick={() => setSelectedPatient(null)}>
+                      Cari Pasien Lain
+                    </Button>
+                  </div>
+                </div>
+              )}
+               <div className="flex gap-4">
+                <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  Kembali
                 </Button>
               </div>
             </div>
           )}
+
         </Card>
       </div>
     </div>
