@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Users, ClipboardList, BarChart2, UserPlus } from "lucide-react";
+import { Users, ClipboardList, BarChart2, UserPlus, Database } from "lucide-react";
 
 const Sidebar = () => {
   const navLinks = [
     { to: "/register", icon: UserPlus, label: "Tambah Pasien" },
     { to: "/admin/patient-verification", icon: Users, label: "Verifikasi Pasien" },
+    { to: "/admin/patient-data", icon: Database, label: "Data Pasien" },
     { to: "/admin/queue-management", icon: ClipboardList, label: "Manajemen Antrian" },
     { to: "/admin/reports", icon: BarChart2, label: "Laporan" },
   ];

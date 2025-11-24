@@ -16,6 +16,7 @@ import DoctorQueue from "./pages/DoctorQueue";
 import PharmacistDashboard from "./pages/PharmacistDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import PatientVerification from "./pages/admin/PatientVerification";
+import PatientData from "./pages/admin/PatientData"; // Import the new component
 import QueueManagement from "./pages/admin/QueueManagement";
 import AdminReports from "./pages/admin/Reports";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -81,6 +82,7 @@ const App = () => {
               <Route path="/admin" element={<AdminDashboard />}>
                 <Route index element={<PatientVerification />} />
                 <Route path="patient-verification" element={<PatientVerification />} />
+                <Route path="patient-data" element={<PatientData />} />
                 <Route path="queue-management" element={<QueueManagement />} />
                 <Route path="reports" element={<AdminReports />} />
               </Route>

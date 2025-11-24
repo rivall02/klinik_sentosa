@@ -20,8 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"; // Import Dialog components
-import { Label } from "@/components/ui/label"; // Import Label component
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { MoreHorizontal } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
@@ -33,14 +33,17 @@ const PatientVerification = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const { toast } = useToast();
 
-  const [selectedPatient, setSelectedPatient] = useState<any | null>(null); // State for selected patient
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false); // State for dialog visibility
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const fetchPatients = async () => {
+    setLoading(true);
     try {
+      // Hanya ambil pasien yang statusnya masih pending verifikasi
       const { data, error } = await supabase
         .from("patients")
         .select("*")
+        .eq('is_pending_verification', true)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -58,11 +61,12 @@ const PatientVerification = () => {
     fetchPatients();
   }, [refreshKey]);
 
-  const handleUpdateStatus = async (patientId: string, newStatus: string) => {
+  // Fungsi ini akan menghapus pasien dari daftar verifikasi dengan mengubah flag-nya
+  const handleRemoveFromVerification = async (patientId: string, action: 'disetujui' | 'ditolak') => {
     try {
       const { error } = await supabase
         .from("patients")
-        .update({ status: newStatus })
+        .update({ is_pending_verification: false })
         .eq("id", patientId);
 
       if (error) {
@@ -70,8 +74,8 @@ const PatientVerification = () => {
       }
 
       toast({
-        title: "Status Pasien Diperbarui",
-        description: `Status pasien berhasil diubah menjadi ${newStatus}.`,
+        title: "Verifikasi Selesai",
+        description: `Pasien telah ${action} dan dihapus dari daftar ini.`,
       });
       setRefreshKey(prev => prev + 1);
     } catch (error: any) {
@@ -89,7 +93,7 @@ const PatientVerification = () => {
   };
 
   if (loading) {
-    return <div>Memuat data pasien...</div>;
+    return <div>Memuat data pasien yang perlu verifikasi...</div>;
   }
 
   if (error) {
@@ -99,21 +103,20 @@ const PatientVerification = () => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Verifikasi Pasien</h2>
+      <p className="text-muted-foreground mb-4">Daftar ini hanya menampilkan pasien baru yang pendaftarannya perlu ditinjau.</p>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nama Pasien</TableHead>
             <TableHead>Tanggal Pendaftaran</TableHead>
-            <TableHead>Status Verifikasi</TableHead>
             <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {patients.map((patient) => (
+          {patients.length > 0 ? patients.map((patient) => (
             <TableRow key={patient.id}>
               <TableCell>{patient.full_name}</TableCell>
               <TableCell>{new Date(patient.created_at).toLocaleDateString()}</TableCell>
-              <TableCell>{patient.status}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -124,14 +127,17 @@ const PatientVerification = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleViewDetails(patient)}>Lihat Detail</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUpdateStatus(patient.id, 'verified')}>Setujui</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUpdateStatus(patient.id, 'rejected')}>Tolak</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUpdateStatus(patient.id, 'revision_requested')}>Minta Revisi</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRemoveFromVerification(patient.id, 'disetujui')}>Setujui (Hapus dari daftar)</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRemoveFromVerification(patient.id, 'ditolak')}>Tolak (Hapus dari daftar)</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
             </TableRow>
-          ))}
+          )) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">Tidak ada pasien yang memerlukan verifikasi.</TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 
@@ -147,60 +153,28 @@ const PatientVerification = () => {
           {selectedPatient && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="fullName" className="text-right">
-                  Nama Lengkap
-                </Label>
-                <p id="fullName" className="col-span-3 text-left">
-                  {selectedPatient.full_name}
-                </p>
+                <Label className="text-right">Nama Lengkap</Label>
+                <p className="col-span-3">{selectedPatient.full_name}</p>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="medicalRecordNumber" className="text-right">
-                  No. Rekam Medis
-                </Label>
-                <p id="medicalRecordNumber" className="col-span-3 text-left">
-                  {selectedPatient.medical_record_number || "-"}
-                </p>
+                <Label className="text-right">No. Rekam Medis</Label>
+                <p className="col-span-3">{selectedPatient.medical_record_number || "-"}</p>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dob" className="text-right">
-                  Tanggal Lahir
-                </Label>
-                <p id="dob" className="col-span-3 text-left">
-                  {selectedPatient.date_of_birth ? new Date(selectedPatient.date_of_birth).toLocaleDateString() : "-"}
-                </p>
+                <Label className="text-right">Tanggal Lahir</Label>
+                <p className="col-span-3">{selectedPatient.date_of_birth ? new Date(selectedPatient.date_of_birth).toLocaleDateString() : "-"}</p>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">
-                  Telepon
-                </Label>
-                <p id="phone" className="col-span-3 text-left">
-                  {selectedPatient.phone_number || "-"}
-                </p>
+                <Label className="text-right">Telepon</Label>
+                <p className="col-span-3">{selectedPatient.phone_number || "-"}</p>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="address" className="text-right">
-                  Alamat
-                </Label>
-                <p id="address" className="col-span-3 text-left">
-                  {selectedPatient.address || "-"}
-                </p>
+                <Label className="text-right">Alamat</Label>
+                <p className="col-span-3">{selectedPatient.address || "-"}</p>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <p id="status" className="col-span-3 text-left capitalize">
-                  {selectedPatient.status || "-"}
-                </p>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="registeredAt" className="text-right">
-                  Terdaftar Sejak
-                </Label>
-                <p id="registeredAt" className="col-span-3 text-left">
-                  {new Date(selectedPatient.created_at).toLocaleDateString()}
-                </p>
+                <Label className="text-right">Terdaftar Sejak</Label>
+                <p className="col-span-3">{new Date(selectedPatient.created_at).toLocaleDateString()}</p>
               </div>
             </div>
           )}
