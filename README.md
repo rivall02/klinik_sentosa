@@ -1,73 +1,138 @@
-# Welcome to your Lovable project
+# Website Klinik Sentosa
 
-## Project info
+Selamat datang di repositori resmi Website Klinik Sentosa. Proyek ini adalah aplikasi web modern yang dibangun untuk mengelola berbagai aspek operasional klinik, mulai dari manajemen pasien, antrian, hingga pelaporan.
 
-**URL**: https://lovable.dev/projects/8d2805fd-82aa-4a70-b845-555b9225a0fd
+## ✨ Fitur Utama
 
-## How can I edit this code?
+Aplikasi ini dirancang dengan arsitektur berbasis peran (*role-based*) untuk memenuhi kebutuhan setiap pengguna:
 
-There are several ways of editing your application.
+- **👨‍⚕️ Admin:**
+  - **Manajemen Data Pasien:** Mengelola informasi dan rekam medis pasien.
+  - **Verifikasi Pasien:** Memvalidasi data pasien baru yang terdaftar.
+  - **Manajemen Antrian:** Mengatur dan memonitor alur antrian pasien secara *real-time*.
+  - **Laporan & Analitik:** Menghasilkan laporan operasional untuk evaluasi.
 
-**Use Lovable**
+- **🩺 Dokter:**
+  - **Dashboard Konsultasi:** Mengakses jadwal dan melakukan sesi konsultasi dengan pasien.
+  - **Manajemen Jadwal:** Mengatur ketersediaan jadwal praktik.
+  - **Antrian Pasien:** Melihat daftar antrian pasien yang akan dikonsultasi.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8d2805fd-82aa-4a70-b845-555b9225a0fd) and start prompting.
+- **💊 Apoteker:**
+  - **Manajemen Obat:** Mengelola stok dan informasi obat.
+  - **Pengambilan & Pembayaran Obat:** Memproses resep dan transaksi pembayaran dari pasien.
+  - **Dasbor Farmasi:** Memantau aktivitas dan kebutuhan farmasi.
 
-Changes made via Lovable will be committed automatically to this repo.
+- **👑 Owner:**
+  - **Dasbor Utama:** Memberikan ringkasan analitik dan metrik kunci klinik.
+  - **Manajemen Staf:** Mengelola data dan peran staf.
+  - **Laporan Keuangan & Operasional:** Mengakses laporan mendalam untuk pengambilan keputusan strategis.
+  - **Pengaturan Klinik:** Mengonfigurasi parameter operasional.
 
-**Use your preferred IDE**
+- **🔐 Otentikasi & Antrian Pasien:**
+  - **Pendaftaran & Login:** Sistem pendaftaran dan login yang aman untuk semua pengguna.
+  - **Sistem Antrian:** Pasien dapat mendaftar dan mendapatkan nomor antrian secara online.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Teknologi yang Digunakan
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Framework Utama:** [React](https://react.dev/) dengan [Vite](https://vitejs.dev/)
+- **Bahasa:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](httpsg://ui.shadcn.com/)
+- **Backend & Database:** [Supabase](https://supabase.io/)
+- **Manajemen State:** Komponen & *Hooks* React
+- **Routing:** [React Router](https://reactrouter.com/)
 
-Follow these steps:
+## 🛠️ Panduan Instalasi & Menjalankan Proyek
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Ikuti langkah-langkah di bawah ini untuk menjalankan proyek ini di lingkungan lokal Anda.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### **1. Prasyarat**
 
-# Step 3: Install the necessary dependencies.
-npm i
+Pastikan Anda telah menginstal perangkat lunak berikut:
+- [Node.js](https://nodejs.org/en) (versi 18.x atau lebih tinggi)
+- [Bun](https://bun.sh/) (opsional, sebagai alternatif `npm`)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### **2. Kloning Repositori**
+
+```bash
+git clone https://github.com/nama-pengguna-anda/klinik-sentosa.git
+cd klinik-sentosa
 ```
 
-**Edit a file directly in GitHub**
+### **3. Instalasi Dependensi**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Anda bisa menggunakan `npm` atau `bun` untuk menginstal semua dependensi yang dibutuhkan.
 
-**Use GitHub Codespaces**
+```bash
+# Menggunakan npm
+npm install
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Atau menggunakan bun
+bun install
+```
 
-## What technologies are used for this project?
+### **4. Konfigurasi Lingkungan**
 
-This project is built with:
+Proyek ini memerlukan koneksi ke Supabase. Salin file `.env.example` menjadi `.env.local` dan isikan kredensial Supabase Anda.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+VITE_SUPABASE_URL=URL_SUPABASE_ANDA
+VITE_SUPABASE_ANON_KEY=KUNCI_ANON_SUPABASE_ANDA
+```
 
-## How can I deploy this project?
+Anda bisa mendapatkan kredensial ini dari dasbor proyek Supabase Anda.
 
-Simply open [Lovable](https://lovable.dev/projects/8d2805fd-82aa-4a70-b845-555b9225a0fd) and click on Share -> Publish.
+### **5. Menjalankan Server Pengembangan**
 
-## Can I connect a custom domain to my Lovable project?
+Setelah instalasi dan konfigurasi selesai, jalankan server pengembangan lokal.
 
-Yes, you can!
+```bash
+# Menggunakan npm
+npm run dev
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# Atau menggunakan bun
+bun run dev
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Buka browser Anda dan akses [http://localhost:5173](http://localhost:5173) untuk melihat aplikasi berjalan.
+
+## 🔑 Akses Login Akun Staff (Untuk Development)
+
+Anda dapat menggunakan akun bawaan berikut untuk masuk dan menguji fungsionalitas berdasarkan peran:
+
+- **Owner**
+  - **Email:** `owner@gmail.com`
+  - **Password:** `owner123`
+
+- **Admin**
+  - **Email:** `admin@gmail.com`
+  - **Password:** `admin123`
+
+- **Dokter**
+  - **Email:** `dokter@gmail.com`
+  - **Password:** `dokter123`
+
+- **Apoteker**
+  - **Email:** `apoteker@gmail.com`
+  - **Password:** `apoteker123`
+
+## 📁 Struktur Folder
+
+Berikut adalah gambaran umum struktur folder proyek ini:
+
+```
+klinik-sentosa/
+├── src/
+│   ├── assets/         # Aset statis seperti gambar dan ikon
+│   ├── components/     # Komponen UI yang dapat digunakan kembali
+│   ├── hooks/          # Custom hooks untuk logika bersama
+│   ├── lib/            # Konfigurasi library (termasuk Supabase client)
+│   ├── pages/          # Komponen utama untuk setiap halaman/rute
+│   └── ...
+├── public/             # File publik yang tidak diproses oleh Vite
+├── vite.config.ts    # Konfigurasi Vite
+└── ...
+```
+
+---
+
+Terima kasih telah berkontribusi dan menggunakan aplikasi Klinik Sentosa!
