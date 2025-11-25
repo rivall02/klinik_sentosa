@@ -99,15 +99,25 @@ const Schedule = () => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not found");
+
+        // 1. Insert the new appointment
         const appointmentDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
-        const { error } = await supabase.from('appointments').insert({
+        const { error: insertError } = await supabase.from('appointments').insert({
             patient_id: patientToSchedule.id,
             doctor_id: user.id,
             appointment_time: appointmentDateTime.toISOString(),
             status: 'menunggu',
             queue_number: Math.floor(Math.random() * 100) + 1,
         });
-        if (error) throw error;
+        if (insertError) throw insertError;
+
+        // 2. Update patient status to make them unavailable for new scheduling
+        const { error: updateError } = await supabase
+          .from('patients')
+          .update({ is_available_for_scheduling: false })
+          .eq('id', patientToSchedule.id);
+        if (updateError) throw updateError;
+
         toast({ title: "Sukses!", description: `Jadwal untuk ${patientToSchedule.full_name} telah dibuat.` });
         setIsScheduleDialogOpen(false);
         setRefreshKey(prev => prev + 1);
