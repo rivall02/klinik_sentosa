@@ -123,7 +123,7 @@ const DoctorQueue = () => {
                     size="sm"
                     onClick={() => handleStartConsultation(appt)}
                     className="flex-1"
-                    disabled={appt.status === 'sedang_konsultasi' || new Date(appt.appointment_time) > new Date()}
+                    disabled={appt.status === 'sedang_konsultasi'}
                   >
                     <Phone className="w-3 h-3 mr-1" />
                     {appt.status === 'sedang_konsultasi' ? 'Dalam Sesi' : 'Panggil & Mulai Konsultasi'}

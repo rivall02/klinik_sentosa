@@ -108,6 +108,7 @@ const Consultation = () => {
                 medication_id: p.medication_id,
                 quantity: p.quantity,
                 dosage_instructions: p.dosage_instructions,
+                status: 'pending', // Set initial status to pending
             }));
             const { error: prescriptionError } = await supabase.from('prescriptions').insert(prescriptionInsertData);
             if (prescriptionError) throw prescriptionError;
