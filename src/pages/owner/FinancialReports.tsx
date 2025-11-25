@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,23 +18,46 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-
-const mockTransactions = [
-  { date: "2025-11-23", description: "Pembayaran konsultasi", category: "Pendapatan", income: 250000, expense: 0 },
-  { date: "2025-11-23", description: "Pembelian obat", category: "Pengeluaran", income: 0, expense: 1500000 },
-  { date: "2025-11-22", description: "Pembayaran konsultasi", category: "Pendapatan", income: 300000, expense: 0 },
-  { date: "2025-11-21", description: "Gaji staff", category: "Pengeluaran", income: 0, expense: 5000000 },
-];
+import { DateRange } from "react-day-picker";
+import { supabase } from "@/lib/supabaseClient";
 
 const FinancialReports = () => {
-  const [dateRange, setDateRange] = useState({
-    from: new Date(2025, 10, 1),
-    to: new Date(2025, 10, 23),
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
   });
+  
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalIncome = mockTransactions.reduce((acc, t) => acc + t.income, 0);
-  const totalExpense = mockTransactions.reduce((acc, t) => acc + t.expense, 0);
-  const netProfit = totalIncome - totalExpense;
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!dateRange?.from || !dateRange?.to) {
+        setTransactions([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*, patients(full_name)')
+          .gte('created_at', dateRange.from.toISOString())
+          .lte('created_at', dateRange.to.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setTransactions(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, [dateRange]);
+
+  const totalIncome = transactions.reduce((acc, t) => acc + t.total_amount, 0);
 
   return (
     <div className="space-y-8">
@@ -42,7 +65,7 @@ const FinancialReports = () => {
         <div>
           <h1 className="text-3xl font-bold">Laporan Keuangan</h1>
           <p className="text-muted-foreground">
-            Lacak pemasukan, pengeluaran, dan profitabilitas klinik.
+            Lacak pemasukan klinik berdasarkan rentang tanggal.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -73,7 +96,7 @@ const FinancialReports = () => {
               />
             </PopoverContent>
           </Popover>
-          <Button>
+          <Button disabled> {/* Download feature not implemented */}
             <Download className="w-4 h-4 mr-2" />
             Unduh Laporan
           </Button>
@@ -82,33 +105,13 @@ const FinancialReports = () => {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="md:col-span-3">
           <CardHeader>
-            <CardTitle>Total Pendapatan</CardTitle>
+            <CardTitle>Total Pendapatan (dalam rentang terpilih)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               Rp{totalIncome.toLocaleString("id-ID")}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Pengeluaran</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              Rp{totalExpense.toLocaleString("id-ID")}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Laba Bersih</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              Rp{netProfit.toLocaleString("id-ID")}
             </div>
           </CardContent>
         </Card>
@@ -124,26 +127,28 @@ const FinancialReports = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Deskripsi</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead className="text-right">Pemasukan</TableHead>
-                <TableHead className="text-right">Pengeluaran</TableHead>
+                <TableHead>Nama Pasien</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTransactions.map((t, i) => (
-                <TableRow key={i}>
-                  <TableCell>{t.date}</TableCell>
-                  <TableCell>{t.description}</TableCell>
-                  <TableCell>{t.category}</TableCell>
-                  <TableCell className="text-right text-green-600">
-                    {t.income > 0 ? `Rp${t.income.toLocaleString("id-ID")}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right text-red-600">
-                    {t.expense > 0 ? `Rp${t.expense.toLocaleString("id-ID")}` : "-"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {loading ? (
+                <TableRow><TableCell colSpan={3} className="text-center">Memuat...</TableCell></TableRow>
+              ) : error ? (
+                 <TableRow><TableCell colSpan={3} className="text-center text-red-500">{error}</TableCell></TableRow>
+              ) : transactions.length > 0 ? (
+                transactions.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell>{new Date(t.created_at).toLocaleString("id-ID")}</TableCell>
+                    <TableCell>{t.patients?.full_name || 'N/A'}</TableCell>
+                    <TableCell className="text-right text-green-600">
+                      Rp{t.total_amount.toLocaleString("id-ID")}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow><TableCell colSpan={3} className="text-center">Tidak ada transaksi pada rentang tanggal ini.</TableCell></TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
