@@ -72,12 +72,16 @@ bun install
 
 ### **4. Konfigurasi Lingkungan**
 
-Proyek ini memerlukan koneksi ke Supabase. Salin file `.env.example` menjadi `.env.local` dan isikan kredensial Supabase Anda.
+Proyek ini memerlukan koneksi ke Supabase. Kunci API Supabase Anda **tidak boleh disimpan langsung di kode**. Gunakan *environment variables* untuk mengamankannya.
+
+Salin file `.env.example` menjadi `.env.local` dan **isikan kredensial Supabase Anda di sana**:
 
 ```
-VITE_SUPABASE_URL=URL_SUPABASE_ANDA
-VITE_SUPABASE_ANON_KEY=KUNCI_ANON_SUPABASE_ANDA
+VITE_SUPABASE_URL="URL_SUPABASE_ANDA"
+VITE_SUPABASE_ANON_KEY="KUNCI_ANON_SUPABASE_ANDA"
 ```
+
+**Penting:** Pastikan file `.env.local` Anda tidak dikomit ke repositori git. File `.gitignore` sudah dikonfigurasi untuk ini.
 
 Anda bisa mendapatkan kredensial ini dari dasbor proyek Supabase Anda.
 
@@ -132,6 +136,26 @@ klinik-sentosa/
 ├── vite.config.ts    # Konfigurasi Vite
 └── ...
 ```
+
+## ⚠️ Catatan Arsitektur dan Area Peningkatan
+
+Setelah tinjauan kode mendalam, teridentifikasi beberapa area kritis dan peluang peningkatan dalam arsitektur proyek ini. Penting untuk dicatat bahwa aplikasi ini fungsional, namun mengatasi poin-poin ini akan meningkatkan stabilitas, keamanan, performa, dan pemeliharaan jangka panjang.
+
+### 1. Inkonsistensi Penamaan Status
+Berbagai string status digunakan di seluruh basis kode dan database (contoh: 'menunggu', 'sedang menunggu', 'sedang_konsultasi'). Inkonsistensi ini telah menjadi sumber *bug* dan kebingungan.
+*   **Rekomendasi:** Definisikan satu set *konstanta* atau *enum* TypeScript untuk semua status aplikasi dan pastikan semua bagian kode menggunakan definisi terpusat ini.
+
+### 2. Kunci API Supabase Ter-hardcode
+Kunci Supabase URL dan `anon` ditemukan ter-hardcode langsung di `src/lib/supabaseClient.ts`. Ini merupakan risiko keamanan dan praktik yang buruk untuk manajemen konfigurasi lingkungan.
+*   **Rekomendasi:** Pindahkan kunci-kunci ini sepenuhnya ke *environment variables* (file `.env`). Pastikan file `.env` tidak pernah dikomit ke repositori publik.
+
+### 3. Pengambilan Data Manual (Anti-Pattern)
+Meskipun proyek telah menginstal dan mengkonfigurasi `@tanstack/react-query` (*QueryClientProvider* terlihat di `src/App.tsx`), sebagian besar atau seluruh pengambilan data masih dilakukan secara manual menggunakan `useEffect` dan `useState`.
+*   **Rekomendasi:** Manfaatkan `useQuery` dan `useMutation` dari `@tanstack/react-query` untuk semua operasi pengambilan data. Ini akan secara drastis menyederhanakan manajemen *state* (loading, error), menyediakan *caching* otomatis, *refetching*, dan optimisasi performa lainnya.
+
+### 4. Komponen Monolitik
+Beberapa komponen, seperti `src/pages/admin/PatientData.tsx`, teridentifikasi sangat besar, menggabungkan logika pengambilan data, manajemen *state*, dan rendering UI yang kompleks.
+*   **Rekomendasi:** Pecah komponen-komponen besar ini menjadi komponen yang lebih kecil dan lebih fokus (contoh: komponen untuk tabel, komponen untuk formulir, komponen untuk dialog) untuk meningkatkan keterbacaan dan pemeliharaan.
 
 ---
 
