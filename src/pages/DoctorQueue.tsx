@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Phone, UserX } from "lucide-react";
+import { ArrowLeft, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { startOfToday, endOfToday } from 'date-fns';
@@ -127,9 +127,6 @@ const DoctorQueue = () => {
                   >
                     <Phone className="w-3 h-3 mr-1" />
                     {appt.status === 'sedang_konsultasi' ? 'Dalam Sesi' : 'Panggil & Mulai Konsultasi'}
-                  </Button>
-                  <Button size="sm" variant="outline" title="Batalkan">
-                    <UserX className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
